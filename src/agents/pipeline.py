@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from langgraph.graph import StateGraph, END
 from src.agents.state import UnderwritingState
 from src.agents.credit_agent import credit_agent
+from src.agents.policy_agent import policy_agent
 from datetime import datetime
 
 
@@ -141,10 +142,17 @@ def recommendation_agent(state: UnderwritingState) -> UnderwritingState:
             reasons.append("Fails affordability stress test")
         reasoning = f"Application declined. Reasons: {'; '.join(reasons)}."
 
-    hitl_required = recommendation == "escalate" or income_conf < 0.60 or len(compliance_flags) > 1
+    hitl_required = (
+        recommendation == "escalate" or
+        income_conf < 0.60 or
+        len(compliance_flags) > 1 or
+        (state.get("policy_confidence") or 1.0) < 0.65
+    )
     hitl_reason = None
     if hitl_required:
-        if income_conf < 0.60:
+        if (state.get("policy_confidence") or 1.0) < 0.65:
+            hitl_reason = f"Policy retrieval confidence below threshold ({state.get('policy_confidence', 0):.0%}) -- manual policy check required"
+        elif income_conf < 0.60:
             hitl_reason = f"Income confidence below threshold ({income_conf:.0%})"
         elif compliance_flags:
             hitl_reason = f"{len(compliance_flags)} compliance flag(s) require underwriter review"
@@ -205,6 +213,7 @@ def build_pipeline() -> StateGraph:
     graph.add_node("pii", pii_agent)
     graph.add_node("credit", credit_agent)
     graph.add_node("income", income_agent)
+    graph.add_node("policy", policy_agent)
     graph.add_node("compliance", compliance_agent)
     graph.add_node("recommendation", recommendation_agent)
 
@@ -217,7 +226,8 @@ def build_pipeline() -> StateGraph:
         {"income": "income", "compliance": "compliance"}
     )
 
-    graph.add_edge("income", "compliance")
+    graph.add_edge("income", "policy")
+    graph.add_edge("policy", "compliance")
     graph.add_edge("compliance", "recommendation")
     graph.add_edge("recommendation", END)
 
