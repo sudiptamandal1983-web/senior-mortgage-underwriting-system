@@ -1,0 +1,19 @@
+version: "3.9"
+
+services:
+  smus:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - SMUS_API_KEY=dev-key-local
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    volumes:
+      - ./data:/app/data
+      - ./outputs:/app/outputs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
