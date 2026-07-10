@@ -278,9 +278,52 @@ curl -X POST http://localhost:8000/assess \
 Production-architecture demonstration with working LangGraph pipeline and FastAPI layer. Azure deployment requires connection to Azure OpenAI, Azure AI Search, and Key Vault — configuration documented in the deployment architecture section above.
 
 ---
+---
+## Testing
 
+End-to-end test suite covering all core scenarios. Requires the server running locally.
+
+Start the server:
+
+    source .venv/bin/activate
+    uvicorn src.api.main:app --reload --port 8000
+
+Run the test suite:
+
+    python test_smus.py
+
+Expected results — 5/5 tests passing:
+
+- Health check — server healthy
+- Test 1 Standard approval — approve, LTV 80.0%, HITL False
+- Test 2 Rogier LTV breach — conditional, LTV 94.3%, alternative loan EUR 140,161 limited by DTI
+- Test 3 NHG application — approve, LTV 78.1%, HITL False
+- Test 4 Self-employed HITL — escalate, LTV 76.0%, HITL True
+
+Test scenarios cover: standard approval, LTV breach with alternative loan calculation,
+NHG guarantee application, and self-employed HITL escalation.
+
+---
 ## Related projects
 
 - [Portfolio RCA Intelligence System](https://github.com/sudiptamandal1983-web/portfolio-rca) — anomaly detection across 890k loan records with quality-gated LLM evaluation
 - [CircularFlow](https://github.com/sudiptamandal1983-web/circularflow) — multi-agent returns routing with HITL evaluation gate
 - [Autonomous Financial Research Analyst](https://github.com/sudiptamandal1983-web/Autonomous-Financial-Research-Analyst) — agentic RAG for investment research
+
+---
+## Testing
+
+End-to-end test suite covering all core scenarios. Requires the server running locally.
+
+**Start the server:**
+```bash
+source .venv/bin/activate
+uvicorn src.api.main:app --reload --port 8000
+```
+
+**Run the test suite:**
+```bash
+python test_smus.py
+```
+
+**Expected output:**
